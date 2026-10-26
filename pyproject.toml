@@ -1,5 +1,5 @@
 [project]
-name = "create-simli-app-livekit"
+name = "create-simli-app-livekit-agents"
 version = "0.1.0"
 description = "A LiveKit Agents voice agent with a Simli Trinity-2 avatar"
 readme = "README.md"

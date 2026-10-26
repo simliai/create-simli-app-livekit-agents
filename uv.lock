@@ -575,7 +575,7 @@ wheels = [
 ]
 
 [[package]]
-name = "create-simli-app-livekit"
+name = "create-simli-app-livekit-agents"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
