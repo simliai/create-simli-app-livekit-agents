@@ -76,7 +76,7 @@ Everything is near the top of [`agent.py`](agent.py):
 3. OpenAI hears you and answers in voice. The agent streams that voice to the avatar over LiveKit. The avatar publishes lip-synced video and voice on the agent's behalf, so frontends show them as the agent's.
 4. When you leave, or the avatar times out, the agent deletes the room, so the avatar's session ends at once.
 
-`Trinity2Config` exists because the plugin's `SimliConfig` (livekit-plugins-simli 1.8.9) only sends the face, an emotion and the time limits. Its `create_json()` builds the request to Simli, so the subclass adds the Trinity-2 fields there and leaves the emotion out.
+`Trinity2Config` exists because the plugin's `SimliConfig` (livekit-plugins-simli 1.8.9) only sends the face (with a legacy style suffix) and the time limits. Its `create_json()` builds the request to Simli, so the subclass adds the Trinity-2 fields there and sends the plain face ID.
 
 ## Troubleshooting
 

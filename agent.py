@@ -33,10 +33,10 @@ INSTRUCTIONS = (
 class Trinity2Config(simli.SimliConfig):
     """SimliConfig plus Trinity-2's framing options.
 
-    The released plugin's SimliConfig only sends the face, an emotion and the timeouts to
-    Simli's POST /compose/token. Its create_json() builds that request body, so this subclass
-    adds the Trinity-2 fields (https://docs.simli.com/api-reference/trinity-2) and leaves the
-    emotion out. Faces older than Trinity-2 ignore these fields.
+    The released plugin's SimliConfig only sends the face, with a legacy style suffix, and the
+    timeouts to Simli's POST /compose/token. Its create_json() builds that request body, so this
+    subclass adds the Trinity-2 fields (https://docs.simli.com/api-reference/trinity-2) and
+    sends the plain face ID. Faces older than Trinity-2 ignore these fields.
     """
 
     # Video size: 1:1, 16:9 or 9:16, each side at least 512 px.
@@ -54,7 +54,7 @@ class Trinity2Config(simli.SimliConfig):
 
     def create_json(self) -> dict[str, Any]:
         body = super().create_json()
-        body["faceId"] = self.face_id  # no emotion: the face's default style
+        body["faceId"] = self.face_id  # the plain face ID, without the legacy suffix
         for name in (
             "streaming_width",
             "streaming_height",
