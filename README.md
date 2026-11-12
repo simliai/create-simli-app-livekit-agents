@@ -46,6 +46,8 @@ Then use `python agent.py ...` wherever this README says `uv run agent.py ...`.
 2. In a second terminal, start the page: `cd frontend && npm install && npm run dev`
 3. Open http://localhost:3000, click **Start** and allow the microphone. The avatar greets you once it's ready. **End** leaves the room.
 
+`npm run dev` listens on 127.0.0.1 only, so other machines on your network can't open the page and start sessions on your keys. To try it from another device, expose it deliberately (for example `npx next dev -H 0.0.0.0`), and only on a network you trust.
+
 The agent registers as `simli-agent` and only joins rooms whose token dispatches it by that name, as the page's token does. That explicit dispatch matters because a LiveKit project can have other agents deployed that would otherwise join every room. To rename it, set `LIVEKIT_AGENT_NAME` in both `.env` and `frontend/.env.local`.
 
 Alternatively, talk to it from LiveKit's [Agents Playground](https://agents-playground.livekit.io): connect it to your project and set **Agent name** to `simli-agent`.
@@ -89,7 +91,11 @@ This repo includes the [Simli agent skill](https://github.com/simliai/skills) in
 
 ## Before you go to production
 
-Anyone who can join a room in your LiveKit project starts a conversation, which uses your Simli minutes and OpenAI credit. The page's `/api/token` route hands a token to anyone who opens the page, so put it behind your own login before you deploy it. To deploy the agent, run `uv run agent.py start` on any server, or see [LiveKit's deployment guide](https://docs.livekit.io/deploy/agents/). The page builds with `npm run build` and runs with `npm start`, or deploys to any Next.js host.
+Anyone who can join a room in your LiveKit project starts a conversation, which uses your Simli minutes and OpenAI credit. The page's `/api/token` route has no login, so anyone who can reach the page could mint a token. That's why a production build (`npm run build` + `npm start`, or any deployed host) refuses with `403` until you change it. Add your own login and rate limiting where the `TODO` in [`app/api/token/route.ts`](frontend/app/api/token/route.ts) says.
+
+For a demo or an internal network only, `ALLOW_UNAUTHENTICATED_SESSIONS=true` in `frontend/.env.local` (or your host's environment) turns the check off: anyone who can reach the page can then start sessions on your keys. Don't set it on a public deployment.
+
+Each token is valid for 2 minutes, for one new room of at most 3 participants (you, the agent and its avatar), and only lets the user publish their microphone. To deploy the agent, run `uv run agent.py start` on any server, or see [LiveKit's deployment guide](https://docs.livekit.io/deploy/agents/). The page builds with `npm run build` and runs with `npm start`, or deploys to any Next.js host.
 
 ## More
 
