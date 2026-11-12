@@ -1,29 +1,75 @@
 import AvatarCall from "./components/AvatarCall";
-import Navbar from "./components/Navbar";
+import SimliHeaderLogo from "./components/Logo";
+
+const REPO_URL = "https://github.com/simliai/create-simli-app-livekit-agents";
+
+const links = [
+  { href: "https://docs.simli.com", label: "Docs" },
+  { href: "https://discord.gg/yQx49zNF4d", label: "Discord" },
+  { href: REPO_URL, label: "GitHub" },
+];
+
+const code = "font-abc-repro-mono text-xs whitespace-nowrap";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 pt-28 font-abc-repro text-sm text-white">
-      <div className="flex w-full flex-col items-center gap-6 rounded-xl p-6 pb-[40px]">
-        <AvatarCall />
-      </div>
+    <div className="flex min-h-screen flex-col bg-black font-abc-repro text-sm font-normal text-white">
+      <header className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-6 py-6">
+        <SimliHeaderLogo />
+        <nav className="flex items-center gap-6 text-gray-300">
+          {links.map((l) => (
+            <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="hover:text-white">
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      </header>
 
-      <div className="flex max-w-[350px] flex-col items-center font-thin">
-        <span className="mb-[8px] font-bold leading-5">
-          Talk to a LiveKit voice agent with a Simli avatar.
-        </span>
-        <ul className="ml-[6px] mt-2 max-w-[350px] list-inside list-decimal">
-          <li className="mb-1">
-            Start the agent with <code>uv run agent.py dev</code>.
-          </li>
-          <li className="mb-1">Click Start, allow the microphone, and say hello.</li>
-          <li className="mb-1">
-            Change the face, voice and prompt in <code>agent.py</code>.
-          </li>
-        </ul>
-      </div>
+      <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center px-6 pb-12">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl leading-tight font-bold">Talk to a LiveKit voice agent</h1>
+          <p className="mt-2 text-gray-400">OpenAI Realtime answers, and a Simli avatar speaks it in real time.</p>
+        </div>
 
-      <Navbar />
-    </main>
+        <div className="w-full max-w-[960px]">
+          <AvatarCall />
+        </div>
+
+        <section className="mt-12 w-full max-w-[960px] rounded-lg border border-white/10 p-6 text-gray-300">
+          <h2 className="mb-4 font-bold text-white">Run it yourself</h2>
+          <ol className="grid gap-4 sm:grid-cols-3">
+            <li>
+              <span className="mb-1 block text-white">1. Add your keys</span>
+              Copy <code className={code}>.env.example</code> to <code className={code}>.env</code> and add your
+              Simli, LiveKit and OpenAI keys. Put the same LiveKit values in{" "}
+              <code className={code}>frontend/.env.local</code>.
+            </li>
+            <li>
+              <span className="mb-1 block text-white">2. Start it</span>
+              Run <code className={code}>uv run agent.py dev</code>, then{" "}
+              <code className={code}>npm run dev</code> in <code className={code}>frontend/</code>, and open this
+              page.
+            </li>
+            <li>
+              <span className="mb-1 block text-white">3. Make it yours</span>
+              Change <code className={code}>SIMLI_FACE_ID</code> for another avatar, and the voice and prompt in{" "}
+              <code className={code}>agent.py</code>.
+            </li>
+          </ol>
+          <p className="mt-6 text-xs text-gray-500">
+            Before deploying, put <code className={code}>/api/token</code> behind your own sign-in. See the{" "}
+            <a
+              href={`${REPO_URL}#before-you-go-to-production`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              README
+            </a>
+            .
+          </p>
+        </section>
+      </main>
+    </div>
   );
 }

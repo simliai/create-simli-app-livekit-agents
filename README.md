@@ -35,7 +35,7 @@ Prefer pip? With Python 3.10 to 3.14:
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install livekit-agents==1.8.9 livekit-plugins-openai==1.8.9 livekit-plugins-simli==1.8.9 python-dotenv==1.2.4
+pip install livekit-agents==1.8.11 livekit-plugins-openai==1.8.11 livekit-plugins-simli==1.8.11 python-dotenv==1.2.4
 ```
 
 Then use `python agent.py ...` wherever this README says `uv run agent.py ...`.
@@ -46,21 +46,23 @@ Then use `python agent.py ...` wherever this README says `uv run agent.py ...`.
 2. In a second terminal, start the page: `cd frontend && npm install && npm run dev`
 3. Open http://localhost:3000, click **Start** and allow the microphone. The avatar greets you once it's ready. **End** leaves the room.
 
+`npm run dev` listens on 127.0.0.1 only, so other machines on your network can't open the page and start sessions on your keys. To try it from another device, expose it deliberately (for example `npx next dev -H 0.0.0.0`), and only on a network you trust.
+
 The agent registers as `simli-agent` and only joins rooms whose token dispatches it by that name, as the page's token does. That explicit dispatch matters because a LiveKit project can have other agents deployed that would otherwise join every room. To rename it, set `LIVEKIT_AGENT_NAME` in both `.env` and `frontend/.env.local`.
 
 Alternatively, talk to it from LiveKit's [Agents Playground](https://agents-playground.livekit.io): connect it to your project and set **Agent name** to `simli-agent`.
 
 `uv run agent.py console` talks to the agent in your terminal instead. It is voice only: console mode has no LiveKit room, so there is no avatar. It needs a microphone (and PortAudio on Linux).
 
-`uv run agent.py dev` shows debug logs; restart it after code changes. livekit-agents 1.8.9 marks the `dev` and `console` subcommands as deprecated, and `dev` no longer reloads on changes. The [LiveKit CLI](https://docs.livekit.io/agents/server/startup-modes/) (2.18.8 or later) runs the same `agent.py` with `lk agent dev` and `lk agent console`.
+`uv run agent.py dev` shows debug logs; restart it after code changes. livekit-agents 1.8 marks the `dev` and `console` subcommands as deprecated, and `dev` no longer reloads on changes. The [LiveKit CLI](https://docs.livekit.io/agents/server/startup-modes/) (2.18.8 or later) runs the same `agent.py` with `lk agent dev` and `lk agent console`.
 
 ## Make it yours
 
 Everything for the agent is near the top of [`agent.py`](agent.py):
 
-- **Face:** any Trinity-2 face ID. Pick a [preset](https://docs.simli.com/api-reference/preset-faces) or [make your own from a photo](https://app.simli.com). Or set `SIMLI_FACE_ID`.
-- **Framing:** the video is 16:9 at 1366x768, Trinity-2's full frame, with the avatar at the bottom centre. In `Trinity2Config` you can change the size (1:1 and 9:16 work too), move the avatar, start the [camera](https://docs.simli.com/api-reference/trinity-2/camera) elsewhere, or add your own [background or foreground](https://docs.simli.com/api-reference/trinity-2/backgrounds). See [Framing the video](https://docs.simli.com/api-reference/trinity-2#framing-the-video).
-- **Model and voice:** `openai.realtime.RealtimeModel(model="gpt-realtime", voice="marin")`.
+- **Face:** any Trinity-2 face ID. The default is Simli's default Trinity-2 face (`14c60d62-6ebf-424d-b626-1f4f91c33b04`). Pick a [preset](https://docs.simli.com/api-reference/preset-faces) or [make your own from a photo](https://app.simli.com). Or set `SIMLI_FACE_ID`.
+- **Framing:** the video is 16:9 at 1366x768, Trinity-2's full frame, with the avatar at the bottom centre. In the `SimliConfig` in `agent.py` you can change the size (1:1 and 9:16 work too), move the avatar, start the [camera](https://docs.simli.com/api-reference/trinity-2/camera) elsewhere, or add your own [background or foreground](https://docs.simli.com/api-reference/trinity-2/backgrounds). See [Framing the video](https://docs.simli.com/api-reference/trinity-2#framing-the-video).
+- **Model and voice:** `openai.realtime.RealtimeModel(model="gpt-realtime", voice="marin")`. Match the voice to the face: the default face is a woman, and `marin` is a female voice.
 - **Prompt and greeting:** `INSTRUCTIONS` and the `generate_reply` call.
 - **Session limits:** the avatar leaves after 10 minutes (`max_session_length`) or 5 minutes without speaking (`max_idle_time`), and the session ends with it.
 - **Tools and more:** it's a regular LiveKit agent, so everything in the [LiveKit Agents docs](https://docs.livekit.io/agents/) applies.
@@ -75,7 +77,11 @@ The page is [`frontend/app/page.tsx`](frontend/app/page.tsx) (layout and text) a
 4. OpenAI hears your mic and answers in voice. The agent streams that voice to the avatar over LiveKit. The avatar publishes lip-synced video and voice on the agent's behalf, under its own identity; the page plays whichever remote video and audio tracks arrive.
 5. The avatar's session ends with the agent's. When you leave, or the avatar reaches its time limits, the agent deletes the room to tidy up, so everyone leaves at once. If the agent itself stops mid-call, its avatar leaves with it. Either way the page returns to its start screen.
 
-`Trinity2Config` exists because the plugin's `SimliConfig` (livekit-plugins-simli 1.8.9) only sends the face (with a legacy style suffix) and the time limits. Its `create_json()` builds the request to Simli, so the subclass adds the Trinity-2 fields there and sends the plain face ID.
+The Trinity-2 options (`streaming_width`, `streaming_height`, `avatar_position_x`, `avatar_position_y`, `camera`, `background_id`, `foreground_id`) are plain `SimliConfig` fields since livekit-plugins-simli 1.8.10. On older versions they need a subclass of `SimliConfig`; see [Trinity-2 in LiveKit Agents](https://docs.simli.com/api-reference/trinity-2/integration-workarounds).
+
+## Using a coding agent?
+
+This repo includes the [Simli agent skill](https://github.com/simliai/skills) in `.agents/skills/simli` (linked from `.claude/skills/simli`), so Claude Code, Codex, Cursor and other agents that support skills know how to change the face, framing, camera and prompt, and how to fix common errors. To add it to another project: `npx skills add simliai/skills`.
 
 ## Troubleshooting
 
@@ -85,7 +91,11 @@ The page is [`frontend/app/page.tsx`](frontend/app/page.tsx) (layout and text) a
 
 ## Before you go to production
 
-Anyone who can join a room in your LiveKit project starts a conversation, which uses your Simli minutes and OpenAI credit. The page's `/api/token` route hands a token to anyone who opens the page, so put it behind your own login before you deploy it. To deploy the agent, run `uv run agent.py start` on any server, or see [LiveKit's deployment guide](https://docs.livekit.io/deploy/agents/). The page builds with `npm run build` and runs with `npm start`, or deploys to any Next.js host.
+Anyone who can join a room in your LiveKit project starts a conversation, which uses your Simli minutes and OpenAI credit. The page's `/api/token` route has no login, so anyone who can reach the page could mint a token. That's why a production build (`npm run build` + `npm start`, or any deployed host) refuses with `403` until you change it. Add your own login and rate limiting where the `TODO` in [`app/api/token/route.ts`](frontend/app/api/token/route.ts) says.
+
+For a demo or an internal network only, `ALLOW_UNAUTHENTICATED_SESSIONS=true` in `frontend/.env.local` (or your host's environment) turns the check off: anyone who can reach the page can then start sessions on your keys. Don't set it on a public deployment.
+
+Each token is valid for 2 minutes, for one new room of at most 3 participants (you, the agent and its avatar), and only lets the user publish their microphone. To deploy the agent, run `uv run agent.py start` on any server, or see [LiveKit's deployment guide](https://docs.livekit.io/deploy/agents/). The page builds with `npm run build` and runs with `npm start`, or deploys to any Next.js host.
 
 ## More
 

@@ -6,8 +6,6 @@ Run `uv run agent.py dev`, then talk to it from the web page in frontend/. See R
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
-from typing import Any
 
 from dotenv import load_dotenv
 from livekit import rtc
@@ -26,8 +24,9 @@ load_dotenv()
 
 logger = logging.getLogger("simli-agent")
 
-# A Trinity-2 preset face. Set SIMLI_FACE_ID in .env to use another one.
-DEFAULT_FACE_ID = "bf13113a-355a-4d97-8b90-4edccd1da7b2"
+# Simli's default Trinity-2 face (a woman, so the voice below is a female one). Set SIMLI_FACE_ID
+# in .env to use another face, and match the voice to it.
+DEFAULT_FACE_ID = "14c60d62-6ebf-424d-b626-1f4f91c33b04"
 
 # The agent only joins rooms that dispatch it by this name, as the frontend's token does.
 # Without a name, LiveKit would send it to every new room in the project.
@@ -38,46 +37,6 @@ INSTRUCTIONS = (
     "Speak English unless the user speaks another language. "
     "Keep your replies short and conversational. Don't use emojis, lists or markdown."
 )
-
-
-@dataclass
-class Trinity2Config(simli.SimliConfig):
-    """SimliConfig plus Trinity-2's framing options.
-
-    The released plugin's SimliConfig only sends the face, with a legacy style suffix, and the
-    timeouts to Simli's POST /compose/token. Its create_json() builds that request body, so this
-    subclass adds the Trinity-2 fields (https://docs.simli.com/api-reference/trinity-2) and
-    sends the plain face ID. Faces older than Trinity-2 ignore these fields.
-    """
-
-    # Video size: 1:1, 16:9 or 9:16, each side at least 512 px.
-    # 1366x768 is Trinity-2's full 16:9 frame; the API default is 768x768.
-    streaming_width: int = 1366
-    streaming_height: int = 768
-    # Where the avatar sits on the canvas, each 0 to 1 (0.5, 1.0 is bottom centre).
-    avatar_position_x: float = 0.5
-    avatar_position_y: float = 1.0
-    # Starting camera, e.g. {"zoom": 1.2, "orbit_y_off": 15}. None keeps the avatar's own.
-    camera: dict[str, float] | None = None
-    # Ids of your own uploads (POST /assets/backgrounds, /assets/foregrounds).
-    background_id: str | None = None
-    foreground_id: str | None = None
-
-    def create_json(self) -> dict[str, Any]:
-        body = super().create_json()
-        body["faceId"] = self.face_id  # the plain face ID, without the legacy suffix
-        for name in (
-            "streaming_width",
-            "streaming_height",
-            "avatar_position_x",
-            "avatar_position_y",
-            "camera",
-            "background_id",
-            "foreground_id",
-        ):
-            if (value := getattr(self, name)) is not None:
-                body[name] = value
-        return body
 
 
 server = AgentServer()
@@ -100,11 +59,24 @@ async def entrypoint(ctx: JobContext) -> None:
         await ctx.connect()
 
         avatar = simli.AvatarSession(
-            simli_config=Trinity2Config(
+            simli_config=simli.SimliConfig(
                 api_key=os.environ["SIMLI_API_KEY"],
                 face_id=os.getenv("SIMLI_FACE_ID") or DEFAULT_FACE_ID,
                 max_session_length=600,  # seconds; the avatar leaves after this
                 max_idle_time=300,  # seconds without speaking before the avatar leaves
+                # Trinity-2 framing (https://docs.simli.com/api-reference/trinity-2).
+                # Video size: 1:1, 16:9 or 9:16, each side at least 512 px. 1366x768 is
+                # Trinity-2's full 16:9 frame; Simli's default is 768x768.
+                streaming_width=1366,
+                streaming_height=768,
+                # Where the avatar sits on the canvas, each 0 to 1 (0.5, 1.0 is bottom centre).
+                avatar_position_x=0.5,
+                avatar_position_y=1.0,
+                # Optional: a starting camera, e.g. {"zoom": 1.2, "orbit_y_off": 15}, and ids
+                # of your own uploads (POST /assets/backgrounds, /assets/foregrounds).
+                # camera={"zoom": 1.2},
+                # background_id="...",
+                # foreground_id="...",
             ),
         )
         await avatar.start(session, room=ctx.room)
