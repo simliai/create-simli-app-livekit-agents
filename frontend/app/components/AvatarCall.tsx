@@ -3,8 +3,8 @@
 import { Room, RoomEvent, Track } from "livekit-client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import dottedFace from "@/media/dottedface.gif";
 import sparkle from "@/media/sparkle.svg";
+import DottedFace from "./DottedFace";
 
 type Status = "idle" | "connecting" | "connected";
 
@@ -85,18 +85,17 @@ export default function AvatarCall() {
 
   return (
     <>
-      {status === "idle" && (
-        <Image src={dottedFace} alt="" width={350} height={350} priority />
-      )}
+      {status === "idle" && <DottedFace />}
 
-      {/* VideoBox */}
+      {/* VideoBox: 16:9, like the 1366x768 video agent.py asks Simli for. */}
       <div
         className={
           status === "idle"
             ? "hidden"
-            : "relative flex aspect-video w-full max-w-[640px] items-center justify-center overflow-hidden rounded-xs bg-simligray"
+            : "relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-sm bg-simligray"
         }
       >
+        {/* Muted because the voice plays through the <audio> below. */}
         <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-contain" />
         <audio ref={audioRef} autoPlay />
         {status === "connecting" && (
@@ -104,24 +103,33 @@ export default function AvatarCall() {
         )}
       </div>
 
-      <div className="flex w-full max-w-[350px] flex-col items-center">
+      <div className="mx-auto flex w-full max-w-[350px] flex-col items-center">
         {status === "idle" ? (
           <button
             onClick={start}
-            className="flex h-[52px] w-full items-center justify-center rounded-[100px] bg-simliblue px-6 py-3 text-white transition-all duration-300 hover:rounded-xs hover:bg-white hover:text-black"
+            className="mt-4 flex h-[52px] w-full items-center justify-center rounded-[100px] bg-simliblue px-6 py-3 text-white transition-all duration-300 hover:rounded-sm hover:bg-white hover:text-black"
           >
             <span className="font-abc-repro-mono font-bold">Start</span>
           </button>
         ) : (
-          <button
-            onClick={() => end()}
-            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[100px] bg-red px-6 text-white transition-all duration-300 hover:rounded-xs hover:bg-white hover:text-black"
-          >
-            <IconExit />
-            <span className="font-abc-repro-mono font-bold">End</span>
-          </button>
+          <div className="flex w-full flex-col items-center gap-2">
+            <button
+              onClick={() => end()}
+              className="mt-4 flex h-[52px] w-full items-center justify-center gap-2 rounded-[100px] bg-red px-6 text-white transition-all duration-300 hover:rounded-sm hover:bg-white hover:text-black"
+            >
+              <IconExit />
+              <span className="font-abc-repro-mono font-bold">End</span>
+            </button>
+            <span className="font-abc-repro-mono text-xs text-gray-400" aria-live="polite">
+              {status === "connecting" ? "Connecting…" : "Connected. Say hello."}
+            </span>
+          </div>
         )}
-        {error && <p className="mt-4 text-center font-abc-repro-mono text-red">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-4 text-center font-abc-repro-mono text-red">
+            {error}
+          </p>
+        )}
       </div>
     </>
   );

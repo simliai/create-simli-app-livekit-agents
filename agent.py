@@ -24,8 +24,9 @@ load_dotenv()
 
 logger = logging.getLogger("simli-agent")
 
-# A Trinity-2 preset face. Set SIMLI_FACE_ID in .env to use another one.
-DEFAULT_FACE_ID = "bf13113a-355a-4d97-8b90-4edccd1da7b2"
+# Simli's default Trinity-2 face (a woman, so the voice below is a female one). Set SIMLI_FACE_ID
+# in .env to use another face, and match the voice to it.
+DEFAULT_FACE_ID = "14c60d62-6ebf-424d-b626-1f4f91c33b04"
 
 # The agent only joins rooms that dispatch it by this name, as the frontend's token does.
 # Without a name, LiveKit would send it to every new room in the project.

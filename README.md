@@ -60,9 +60,9 @@ Alternatively, talk to it from LiveKit's [Agents Playground](https://agents-play
 
 Everything for the agent is near the top of [`agent.py`](agent.py):
 
-- **Face:** any Trinity-2 face ID. Pick a [preset](https://docs.simli.com/api-reference/preset-faces) or [make your own from a photo](https://app.simli.com). Or set `SIMLI_FACE_ID`.
+- **Face:** any Trinity-2 face ID. The default is Simli's default Trinity-2 face (`14c60d62-6ebf-424d-b626-1f4f91c33b04`). Pick a [preset](https://docs.simli.com/api-reference/preset-faces) or [make your own from a photo](https://app.simli.com). Or set `SIMLI_FACE_ID`.
 - **Framing:** the video is 16:9 at 1366x768, Trinity-2's full frame, with the avatar at the bottom centre. In the `SimliConfig` in `agent.py` you can change the size (1:1 and 9:16 work too), move the avatar, start the [camera](https://docs.simli.com/api-reference/trinity-2/camera) elsewhere, or add your own [background or foreground](https://docs.simli.com/api-reference/trinity-2/backgrounds). See [Framing the video](https://docs.simli.com/api-reference/trinity-2#framing-the-video).
-- **Model and voice:** `openai.realtime.RealtimeModel(model="gpt-realtime", voice="marin")`.
+- **Model and voice:** `openai.realtime.RealtimeModel(model="gpt-realtime", voice="marin")`. Match the voice to the face: the default face is a woman, and `marin` is a female voice.
 - **Prompt and greeting:** `INSTRUCTIONS` and the `generate_reply` call.
 - **Session limits:** the avatar leaves after 10 minutes (`max_session_length`) or 5 minutes without speaking (`max_idle_time`), and the session ends with it.
 - **Tools and more:** it's a regular LiveKit agent, so everything in the [LiveKit Agents docs](https://docs.livekit.io/agents/) applies.
