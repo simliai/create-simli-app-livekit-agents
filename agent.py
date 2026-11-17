@@ -56,7 +56,7 @@ LLM_MODEL = "google/gemma-4-31b-it"  # LiveKit's recommended default, served by 
 TTS_MODEL = "cartesia/sonic-3.5"  # text to speech: Cartesia Sonic 3.5, natural and expressive
 
 # Voices for TTS_MODEL (https://docs.livekit.io/agents/models/tts/). Match the voice to the face.
-FEMALE_VOICE = "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc"  # Jacqueline: confident, young American female
+FEMALE_VOICE = "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc"  # Jacqueline: confident, young American
 MALE_VOICE = "a167e0f3-df7e-4d52-a9c3-f949145efdab"  # Blake: energetic American male
 VOICE = FEMALE_VOICE
 
