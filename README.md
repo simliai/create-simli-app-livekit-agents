@@ -8,7 +8,7 @@ Looking for Pipecat instead? See the sibling starter, [create-simli-app-pipecat]
 
 ## What's in here
 
-- **[`agent.py`](agent.py)**: the agent. Deepgram Nova-3 turns your speech into text, Gemma 4 31B answers, and Inworld TTS-2 speaks the answer, all through LiveKit Inference. The agent sends that voice to a Simli avatar in the same LiveKit room, and the avatar publishes lip-synced video and voice for the agent.
+- **[`agent.py`](agent.py)**: the agent. Deepgram Nova-3 turns your speech into text, Gemma 4 31B answers, and Cartesia Sonic 3.5 speaks the answer, all through LiveKit Inference. The agent sends that voice to a Simli avatar in the same LiveKit room, and the avatar publishes lip-synced video and voice for the agent.
 - **[`frontend/`](frontend)**: a Next.js page to talk to the avatar in your browser. [`app/api/token/route.ts`](frontend/app/api/token/route.ts) mints a LiveKit token that dispatches the agent, and [`app/components/AvatarCall.tsx`](frontend/app/components/AvatarCall.tsx) joins the room, publishes your mic and shows the avatar.
 
 ## Setup
@@ -78,10 +78,10 @@ Everything here runs on free plans. These are the limits you'll meet first, chec
 | --- | --- | --- |
 | STT: `deepgram/nova-3` | $0.0048 per minute connected | $0.0048 |
 | LLM: `google/gemma-4-31b-it` | $0.40 in / $1.20 out per million tokens | about $0.003 |
-| TTS: `inworld/inworld-tts-2` | $25 per million characters | about $0.010 to $0.015 |
-| **Total** | | **about $0.018 to $0.023** |
+| TTS: `cartesia/sonic-3.5` | about $50 per million characters (Sonic 3's price; check LiveKit's pricing page for 3.5) | about $0.024 to $0.030 |
+| **Total** | | **about $0.032 to $0.038** |
 
-That's roughly **110 to 140 minutes of conversation a month**, or 11 to 14 full ten-minute sessions. The LLM and TTS figures are estimates, not measurements: they assume about four replies a minute of about 120 to 150 characters each, and prompts of about 1,500 tokens. Long, talkative conversations cost more. Speech-to-speech instead (`openai/gpt-live-1` at $0.05 a minute) would last about 50 minutes.
+That's roughly **65 to 80 minutes of conversation a month**, or 6 to 8 full ten-minute sessions. The LLM and TTS figures are estimates, not measurements: they assume about four replies a minute of about 120 to 150 characters each, and prompts of about 1,500 tokens. Long, talkative conversations cost more. Speech-to-speech instead (`openai/gpt-live-1` at $0.05 a minute) would last about 50 minutes.
 
 **Simli free plan** ([pricing](https://www.simli.com/pricing)): 50 avatar minutes a month and 1 session at a time. That's usually the first limit you'll hit, before the Inference credit.
 
@@ -91,8 +91,8 @@ Everything for the agent is in one block at the top of [`agent.py`](agent.py):
 
 - **Face:** `FACE_ID`, any Trinity-2 face ID, or set `SIMLI_FACE_ID` in `.env`. The default is Simli's default Trinity-2 face (`14c60d62-6ebf-424d-b626-1f4f91c33b04`). Pick a [preset](https://docs.simli.com/api-reference/preset-faces) or [make your own from a photo](https://app.simli.com).
 - **Name, prompt and greeting:** `NAME`, `INSTRUCTIONS` and `FIRST_MESSAGE`. The greeting is spoken word for word as soon as the avatar is in the room.
-- **Voice:** `VOICE`. The default face is a woman, so the default is `FEMALE_VOICE` (Inworld's Ashley). Set `VOICE = MALE_VOICE` (Edward) for a male face. Other voices: [LiveKit's TTS models](https://docs.livekit.io/agents/models/tts/).
-- **Models:** `STT_MODEL`, `LLM_MODEL` and `TTS_MODEL`, any [LiveKit Inference model ID](https://docs.livekit.io/agents/models/). The defaults are cheap and quick: Gemma 4 31B is LiveKit's recommended voice-agent LLM and is served on LiveKit's own infrastructure, Inworld TTS-2 is half the price of Cartesia Sonic 3 per character, and Nova-3 is a low-latency streaming STT. If you change `TTS_MODEL`, change the voices with it.
+- **Voice:** `VOICE`. The default face is a woman, so the default is `FEMALE_VOICE` (Cartesia's Jacqueline). Set `VOICE = MALE_VOICE` (Blake) for a male face. Other voices: [LiveKit's TTS models](https://docs.livekit.io/agents/models/tts/).
+- **Models:** `STT_MODEL`, `LLM_MODEL` and `TTS_MODEL`, any [LiveKit Inference model ID](https://docs.livekit.io/agents/models/). The defaults are cheap and quick: Gemma 4 31B is LiveKit's recommended voice-agent LLM and is served on LiveKit's own infrastructure, Cartesia Sonic 3.5 sounds the most natural of LiveKit's suggested voices (Inworld TTS-2 costs about half as much per character if price matters more), and Nova-3 is a low-latency streaming STT. If you change `TTS_MODEL`, change the voices with it.
 - **Session limits:** `MAX_SESSION_LENGTH` (600 seconds) and `MAX_IDLE_TIME` (300 seconds without speaking). The avatar leaves at either limit, and the session ends with it.
 - **Framing:** the video is 16:9 at 1366x768, Trinity-2's full frame, with the avatar at the bottom centre. In the `SimliConfig` in `agent.py` you can change the size (1:1 and 9:16 work too), move the avatar, start the [camera](https://docs.simli.com/api-reference/trinity-2/camera) elsewhere, or add your own [background or foreground](https://docs.simli.com/api-reference/trinity-2/backgrounds). See [Framing the video](https://docs.simli.com/api-reference/trinity-2#framing-the-video).
 - **Tools and more:** it's a regular LiveKit agent, so everything in the [LiveKit Agents docs](https://docs.livekit.io/agents/) applies.

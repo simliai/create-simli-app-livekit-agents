@@ -48,16 +48,16 @@ INSTRUCTIONS = (
 FIRST_MESSAGE = f"Hi, I'm {NAME}. What would you like to talk about?"
 
 # Models, all through LiveKit Inference: your LiveKit project's credentials pay for them, so
-# there are no OpenAI, Deepgram or Inworld keys. Other model IDs and prices:
+# there are no OpenAI, Deepgram or Cartesia keys. Other model IDs and prices:
 # https://docs.livekit.io/agents/models/ and https://livekit.com/pricing/inference
 STT_MODEL = "deepgram/nova-3"  # speech to text, streaming
 STT_LANGUAGE = "en"
 LLM_MODEL = "google/gemma-4-31b-it"  # LiveKit's recommended default, served by LiveKit
-TTS_MODEL = "inworld/inworld-tts-2"  # text to speech
+TTS_MODEL = "cartesia/sonic-3.5"  # text to speech: Cartesia Sonic 3.5, natural and expressive
 
 # Voices for TTS_MODEL (https://docs.livekit.io/agents/models/tts/). Match the voice to the face.
-FEMALE_VOICE = "Ashley"  # warm, natural American female
-MALE_VOICE = "Edward"  # fast-talking, emphatic American male
+FEMALE_VOICE = "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc"  # Jacqueline: confident, young American female
+MALE_VOICE = "a167e0f3-df7e-4d52-a9c3-f949145efdab"  # Blake: energetic American male
 VOICE = FEMALE_VOICE
 
 # Simli session limits, in seconds. The avatar leaves after MAX_SESSION_LENGTH, or after
