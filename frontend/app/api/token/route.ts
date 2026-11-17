@@ -13,7 +13,7 @@ const isProduction = process.env.NODE_ENV === "production";
 // Mints a token for a new room. The API secret signs it here, on the server, and never
 // reaches the browser.
 //
-// Every token starts a conversation that uses your Simli minutes and OpenAI credit, and this
+// Every token starts a conversation that uses your Simli minutes and LiveKit Inference credit, and this
 // route has no login: anyone who can reach it can start one. So in production (`next build` +
 // `next start`, or a deployed host) it refuses unless you opt in with
 // ALLOW_UNAUTHENTICATED_SESSIONS=true, which is only for demos and internal networks.
@@ -35,12 +35,17 @@ export async function POST() {
 
   const { LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET } = process.env;
   if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
-    console.error("api/token: set LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET");
+    const missing = Object.entries({ LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET })
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+    const message = `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} not set`;
+    console.error(`api/token: ${message}`);
     return Response.json(
       {
+        // Don't tell visitors of a deployed page how the server is set up.
         error: isProduction
           ? "The server isn't configured to start sessions."
-          : "Set LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET in frontend/.env.local",
+          : `${message}. Add ${missing.length === 1 ? "it" : "them"} to frontend/.env.local and restart npm run dev.`,
       },
       { status: 500 },
     );

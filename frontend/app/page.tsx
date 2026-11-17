@@ -28,7 +28,7 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center px-6 pb-12">
         <div className="mb-6 text-center">
           <h1 className="text-2xl leading-tight font-bold">Talk to a LiveKit voice agent</h1>
-          <p className="mt-2 text-gray-400">OpenAI Realtime answers, and a Simli avatar speaks it in real time.</p>
+          <p className="mt-2 text-gray-400">LiveKit Inference listens and answers, and a Simli avatar speaks it in real time.</p>
         </div>
 
         <div className="w-full max-w-[960px]">
@@ -41,7 +41,7 @@ export default function Home() {
             <li>
               <span className="mb-1 block text-white">1. Add your keys</span>
               Copy <code className={code}>.env.example</code> to <code className={code}>.env</code> and add your
-              Simli, LiveKit and OpenAI keys. Put the same LiveKit values in{" "}
+              Simli key and your LiveKit project&apos;s URL, key and secret. Put the same LiveKit values in{" "}
               <code className={code}>frontend/.env.local</code>.
             </li>
             <li>
