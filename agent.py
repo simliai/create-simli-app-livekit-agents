@@ -89,6 +89,10 @@ async def entrypoint(ctx: JobContext) -> None:
             # The avatar can't pause its speech, so there is nothing to resume after a false
             # interruption.
             interruption={"resume_false_interruption": False},
+            # How long to wait after the user stops talking. LiveKit's default waits up to 3 s
+            # when the turn detector thinks the user might go on ("Hello?", "Well,"), which felt
+            # slow; this answers within 1.2 s at most, and 0.3 s when the turn is clearly over.
+            endpointing={"min_delay": 0.3, "max_delay": 1.2},
         ),
     )
 
