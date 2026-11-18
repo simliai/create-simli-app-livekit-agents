@@ -1,6 +1,6 @@
 "use client";
 
-import { Room, RoomEvent, Track } from "livekit-client";
+import { RemoteTrackPublication, Room, RoomEvent, Track, VideoQuality } from "livekit-client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import sparkle from "@/media/sparkle.svg";
@@ -10,6 +10,9 @@ type Status = "idle" | "connecting" | "connected";
 
 // Give up if the avatar's video hasn't arrived by then (is the agent running?).
 const AVATAR_TIMEOUT_MS = 45_000;
+// The video shows once it's this wide (agent.py asks Simli for 1366 x 768), or after this long
+const SHARP_WIDTH = 1280;
+const SHARP_TIMEOUT_MS = 3_000;
 
 export default function AvatarCall() {
   const [status, setStatus] = useState<Status>("idle");
@@ -42,11 +45,27 @@ export default function AvatarCall() {
     // Simli's avatar joins as its own participant and publishes the video and voice on the
     // agent's behalf. The only remote tracks in this room are the avatar's, so take whichever
     // video and audio track arrives instead of looking for a particular identity.
-    room.on(RoomEvent.TrackSubscribed, (track) => {
+    room.on(RoomEvent.TrackSubscribed, (track, publication) => {
       if (track.kind === Track.Kind.Video && videoRef.current) {
+        // Ask the server for the full-quality layer straight away instead of letting it start low
+        // and step up, which shows as a blurry first few seconds
+        if (publication instanceof RemoteTrackPublication) publication.setVideoQuality(VideoQuality.HIGH);
         track.attach(videoRef.current);
         avatarShown = true;
-        setStatus("connected");
+        // Keep the loader until the video is sharp (near the 1366 px width asked for), or 3 s
+        const video = videoRef.current;
+        let revealed = false;
+        const reveal = () => {
+          if (revealed || roomRef.current !== room) return;
+          revealed = true;
+          setStatus("connected");
+        };
+        const check = () => {
+          if (video.videoWidth >= SHARP_WIDTH) reveal();
+        };
+        video.addEventListener("resize", check);
+        video.addEventListener("loadedmetadata", check);
+        setTimeout(reveal, SHARP_TIMEOUT_MS);
       } else if (track.kind === Track.Kind.Audio && audioRef.current) {
         track.attach(audioRef.current);
       }
@@ -96,7 +115,7 @@ export default function AvatarCall() {
         }
       >
         {/* Muted because the voice plays through the <audio> below. */}
-        <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-contain" />
+        <video ref={videoRef} autoPlay playsInline muted className={`h-full w-full object-contain transition-opacity duration-500 ${status === "connected" ? "opacity-100" : "opacity-0"}`} />
         <audio ref={audioRef} autoPlay />
         {status === "connecting" && (
           <Image src={sparkle} alt="Connecting" className="absolute h-[40px] w-auto animate-loader" />

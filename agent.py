@@ -1,4 +1,4 @@
-"""A LiveKit Agents voice agent with a Simli Trinity-2 avatar.
+"""A LiveKit Agents voice agent on LiveKit Inference, with a Simli Trinity-2 avatar.
 
 Run `uv run agent.py dev`, then talk to it from the web page in frontend/. See README.md.
 """
@@ -6,6 +6,7 @@ Run `uv run agent.py dev`, then talk to it from the web page in frontend/. See R
 import asyncio
 import logging
 import os
+import sys
 
 from dotenv import load_dotenv
 from livekit import rtc
@@ -16,27 +17,59 @@ from livekit.agents import (
     CloseEvent,
     CloseReason,
     JobContext,
+    TurnHandlingOptions,
     cli,
+    inference,
 )
-from livekit.plugins import openai, simli
+from livekit.plugins import simli
 
 load_dotenv()
 
 logger = logging.getLogger("simli-agent")
 
-# Simli's default Trinity-2 face (a woman, so the voice below is a female one). Set SIMLI_FACE_ID
-# in .env to use another face, and match the voice to it.
-DEFAULT_FACE_ID = "14c60d62-6ebf-424d-b626-1f4f91c33b04"
+# --- Make it yours: everything you'd usually change is here. ------------------------------------
+
+# Simli's default Trinity-2 face, a woman, so the default voice below is a female one. Use any
+# Trinity-2 face ID (https://docs.simli.com/api-reference/preset-faces), or set SIMLI_FACE_ID in
+# .env, and match the voice to it.
+FACE_ID = os.getenv("SIMLI_FACE_ID") or "14c60d62-6ebf-424d-b626-1f4f91c33b04"
+
+NAME = "Ava"
+
+INSTRUCTIONS = (
+    f"You are {NAME}, a friendly voice assistant whom the user sees as a video avatar. "
+    "Speak English unless the user speaks another language. "
+    "Keep your replies short and conversational: one to three sentences. "
+    "Don't use emojis, lists, markdown or other formatting: everything you write is spoken."
+)
+
+# What the avatar says first, as soon as it's in the room. It's spoken word for word, so the
+# user hears it without waiting for the LLM.
+FIRST_MESSAGE = f"Hi, I'm {NAME}. What would you like to talk about?"
+
+# Models, all through LiveKit Inference: your LiveKit project's credentials pay for them, so
+# there are no OpenAI, Deepgram or Cartesia keys. Other model IDs and prices:
+# https://docs.livekit.io/agents/models/ and https://livekit.com/pricing/inference
+STT_MODEL = "deepgram/nova-3"  # speech to text, streaming
+STT_LANGUAGE = "en"
+LLM_MODEL = "google/gemma-4-31b-it"  # LiveKit's recommended default, served by LiveKit
+TTS_MODEL = "cartesia/sonic-3.5"  # text to speech: Cartesia Sonic 3.5, natural and expressive
+
+# Voices for TTS_MODEL (https://docs.livekit.io/agents/models/tts/). Match the voice to the face.
+FEMALE_VOICE = "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc"  # Jacqueline: confident, young American
+MALE_VOICE = "a167e0f3-df7e-4d52-a9c3-f949145efdab"  # Blake: energetic American male
+VOICE = FEMALE_VOICE
+
+# Simli session limits, in seconds. The avatar leaves after MAX_SESSION_LENGTH, or after
+# MAX_IDLE_TIME without speaking, and the conversation ends with it.
+MAX_SESSION_LENGTH = 600
+MAX_IDLE_TIME = 300  # the plugin's own default is only 30
+
+# ------------------------------------------------------------------------------------------------
 
 # The agent only joins rooms that dispatch it by this name, as the frontend's token does.
 # Without a name, LiveKit would send it to every new room in the project.
 AGENT_NAME = os.getenv("LIVEKIT_AGENT_NAME") or "simli-agent"
-
-INSTRUCTIONS = (
-    "You are a friendly voice assistant, seen by the user as a video avatar. "
-    "Speak English unless the user speaks another language. "
-    "Keep your replies short and conversational. Don't use emojis, lists or markdown."
-)
 
 
 server = AgentServer()
@@ -45,11 +78,22 @@ server = AgentServer()
 @server.rtc_session(agent_name=AGENT_NAME)
 async def entrypoint(ctx: JobContext) -> None:
     session = AgentSession(
-        # A speech-to-speech model: no separate STT or TTS provider, and one OpenAI key.
-        llm=openai.realtime.RealtimeModel(model="gpt-realtime", voice="marin"),
-        # The avatar can't pause its speech, so there is nothing to resume after a false
-        # interruption.
-        turn_handling={"interruption": {"resume_false_interruption": False}},
+        stt=inference.STT(model=STT_MODEL, language=STT_LANGUAGE),
+        llm=inference.LLM(model=LLM_MODEL),
+        tts=inference.TTS(model=TTS_MODEL, voice=VOICE),
+        turn_handling=TurnHandlingOptions(
+            # LiveKit's turn detector decides when the user has finished speaking, from what
+            # they said and how they said it. The session adds the voice activity detector it
+            # needs. https://docs.livekit.io/agents/build/turns/
+            turn_detection=inference.TurnDetector(),
+            # The avatar can't pause its speech, so there is nothing to resume after a false
+            # interruption.
+            interruption={"resume_false_interruption": False},
+            # How long to wait after the user stops talking. LiveKit's default waits up to 3 s
+            # when the turn detector thinks the user might go on ("Hello?", "Well,"), which felt
+            # slow; this answers within 1.2 s at most, and 0.3 s when the turn is clearly over.
+            endpointing={"min_delay": 0.3, "max_delay": 1.2},
+        ),
     )
 
     # `console` runs the agent in your terminal with no LiveKit room, so there is
@@ -61,9 +105,9 @@ async def entrypoint(ctx: JobContext) -> None:
         avatar = simli.AvatarSession(
             simli_config=simli.SimliConfig(
                 api_key=os.environ["SIMLI_API_KEY"],
-                face_id=os.getenv("SIMLI_FACE_ID") or DEFAULT_FACE_ID,
-                max_session_length=600,  # seconds; the avatar leaves after this
-                max_idle_time=300,  # seconds without speaking before the avatar leaves
+                face_id=FACE_ID,
+                max_session_length=MAX_SESSION_LENGTH,
+                max_idle_time=MAX_IDLE_TIME,
                 # Trinity-2 framing (https://docs.simli.com/api-reference/trinity-2).
                 # Video size: 1:1, 16:9 or 9:16, each side at least 512 px. 1366x768 is
                 # Trinity-2's full 16:9 frame; Simli's default is 768x768.
@@ -106,7 +150,7 @@ async def entrypoint(ctx: JobContext) -> None:
             if event.reason != CloseReason.JOB_SHUTDOWN:
                 ctx.delete_room()
 
-        # The avatar leaves after max_session_length or max_idle_time, and the conversation
+        # The avatar leaves after MAX_SESSION_LENGTH or MAX_IDLE_TIME, and the conversation
         # ends with it.
         @ctx.room.on("participant_disconnected")
         def _on_participant_disconnected(participant: rtc.RemoteParticipant) -> None:
@@ -114,8 +158,20 @@ async def entrypoint(ctx: JobContext) -> None:
                 ctx.delete_room()
 
     await session.start(agent=Agent(instructions=INSTRUCTIONS), room=ctx.room)
-    session.generate_reply(instructions="Greet the user in one short sentence.")
+    session.say(FIRST_MESSAGE)
+
+
+def _check_env() -> None:
+    """Fail at startup, not on the first call, when a key is missing from .env."""
+    if len(sys.argv) < 2 or sys.argv[1] not in ("dev", "start", "connect"):
+        return  # --help, console, download-files, ...
+    required = ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "SIMLI_API_KEY")
+    missing = [name for name in required if not os.getenv(name)]
+    if missing:
+        verb = "is" if len(missing) == 1 else "are"
+        sys.exit(f"{', '.join(missing)} {verb} not set. Copy .env.example to .env and fill it in.")
 
 
 if __name__ == "__main__":
+    _check_env()
     cli.run_app(server)
